@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wayback Machine Search</title>
+    <style>
+        /* Custom CSS for the interface */
+        body {
+            background-color: #0074d9; /* Blue background */
+            color: #fff; /* White text */
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        h1 {
+            color: #ff4136; /* Red heading */
+        }
+
+        .search-box {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        input[type="text"] {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #2ecc40; /* Green button */
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #27ae60; /* Darker green on hover */
+        }
+
+        #searchResults {
+            text-align: left;
+            margin: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        a {
+            color: #ff4136; /* Red link */
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        a:hover {
+            color: #d9534f; /* Darker red on hover */
+        }
+
+        iframe {
+            width: 100%;
+            height: 500px;
+        }
+
+        /* Your CSS styles here */
+        #embeddedContent {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wayback Machine Search</h1>
+    <div id="webSearch">
+        <input type="text" id="webSearchInput" placeholder="Search for Web Links">
+        <button id="webSearchButton">Search</button>
+    </div>
+    <div id="imageSearch">
+        <input type="text" id="imageSearchInput" placeholder="Search for Images">
+        <button id="imageSearchButton">Search</button>
+    </div>
+    <div id="searchResults">
+        <!-- Search results will be displayed here -->
+    </div>
+
+    <script>
+        document.getElementById("webSearchButton").addEventListener("click", function() {
+            var query = document.getElementById("webSearchInput").value;
+
+            // Use Google Custom Search API to search for web links
+            // Replace 'YOUR_API_KEY' and 'YOUR_CX' with your actual API key and custom search engine ID
+            var googleCustomSearchURL = `https://www.googleapis.com/customsearch/v1?q=${query}&key=AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo&cx=718cd7b701a714611`;
+
+            fetch(googleCustomSearchURL)
+                .then(response => response.json())
+                .then(data => {
+                    // Handle search results here and display them in "searchResults" div
+                    var results = data.items;
+                    var resultsHTML = '<ul>';
+                    results.forEach(result => {
+                        if (result.link) {
+                            // Display links
+                            resultsHTML += `<li><a href="javascript:embedWayback('${result.link}')">${result.title}</a></li>`;
+                        }
+                    });
+                    resultsHTML += '</ul>';
+                    document.getElementById("searchResults").innerHTML = resultsHTML;
+                })
+                .catch(error => console.error(error));
+        });
+
+        document.getElementById("imageSearchButton").addEventListener("click", function() {
+            var query = document.getElementById("imageSearchInput").value;
+
+            // Use Google Custom Search API to search for images
+            // Replace 'YOUR_API_KEY' and 'YOUR_CX' with your actual API key and custom search engine ID
+            var googleCustomSearchURL = `https://www.googleapis.com/customsearch/v1?q=${query}&key=AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo&cx=718cd7b701a714611`;
+
+            fetch(googleCustomSearchURL)
+                .then(response => response.json())
+                .then(data => {
+                    // Handle image search results here and display them in "searchResults" div
+                    var results = data.items;
+                    var resultsHTML = '<ul>';
+                    results.forEach(result => {
+                        if (result.pagemap && result.pagemap.cse_thumbnail) {
+                            // Display images
+                            resultsHTML += `<li><img src="${result.pagemap.cse_thumbnail[0].src}"></li>`;
+                        }
+                    });
+                    resultsHTML += '</ul>';
+                    document.getElementById("searchResults").innerHTML = resultsHTML;
+                })
+                .catch(error => console.error(error));
+        });
+
+        function embedWayback(originalLink) {
+            var waybackURL = `https://archive.org/wayback/available?url=${originalLink}`;
+
+            fetch(waybackURL)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.archived_snapshots.closest) {
+                        // If the site exists in Wayback Machine, try to embed it
+                        var archiveURL = data.archived_snapshots.closest.url;
+
+                        // Create an iframe and attempt to embed the archive
+                        var iframe = document.createElement("iframe");
+                        iframe.src = archiveURL;
+                        iframe.id = "embeddedContent";
+                        iframe.style.width = "100%";
+                        iframe.style.height = "500px";
+
+                        // Replace the content of "searchResults" with the iframe
+                        document.getElementById("searchResults").innerHTML = "";
+                        document.getElementById("searchResults").appendChild(iframe);
+
+                        // Intercept clicks within the iframe and open the links within the iframe
+                        iframe.contentWindow.document.addEventListener("click", function(event) {
+                            if (event.target.tagName === "A") {
+                                event.preventDefault();
+                                embedWayback(event.target.href);
+                            }
+                        });
+                    } else {
+                        // If the site doesn't exist, open the archive in a new tab
+                        window.open(archiveURL, "_blank");
+                    }
+                })
+                .catch(error => console.error(error));
+        }
+    </script>
+</body>
+</html>
+
