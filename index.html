@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Wayback Machine Viewer</title>
+    <title>Web Viewer</title>
 
     <style>
         * {
@@ -30,8 +30,7 @@
             margin-bottom: 18px;
         }
 
-        .search-section,
-        .navigation {
+        .section {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -75,15 +74,6 @@
             background-color: #d9534f;
         }
 
-        button.blue {
-            background-color: #0074d9;
-            border: 2px solid #fff;
-        }
-
-        button.blue:hover {
-            background-color: #005fae;
-        }
-
         #status {
             text-align: center;
             margin: 14px;
@@ -118,11 +108,12 @@
             width: 80%;
             max-width: 900px;
             height: 1px;
-            background: rgba(255,255,255,0.35);
+            background: rgba(255, 255, 255, 0.35);
             margin: 15px auto;
         }
 
         @media (max-width: 600px) {
+
             input[type="text"] {
                 width: 100%;
             }
@@ -141,18 +132,18 @@
 
 <body>
 
-    <h1>Wayback Machine Viewer</h1>
+    <h1>Web Viewer</h1>
 
     <div class="subtitle">
-        Search the web, browse archived pages, or watch YouTube
+        Search the web or enter a URL
     </div>
 
 
     <!-- =========================
-         WEB SEARCH
+         SEARCH
          ========================= -->
 
-    <div class="search-section">
+    <div class="section">
 
         <input
             type="text"
@@ -173,10 +164,10 @@
 
 
     <!-- =========================
-         URL NAVIGATION
+         URL BAR
          ========================= -->
 
-    <div class="navigation">
+    <div class="section navigation">
 
         <input
             type="text"
@@ -203,9 +194,9 @@
         </button>
 
         <button
-            id="liveButton"
+            id="homeButton"
             class="secondary">
-            Live Page
+            Home
         </button>
 
     </div>
@@ -228,7 +219,7 @@
 
         <iframe
             id="viewer"
-            title="Webpage viewer"
+            title="Web viewer"
             allow="
                 autoplay;
                 encrypted-media;
@@ -242,8 +233,8 @@
 
 
     <div class="info">
-        Archived pages are provided through the Internet Archive's
-        Wayback Machine.
+        Web pages are displayed inside the viewer when the destination
+        permits iframe embedding.
     </div>
 
 
@@ -276,8 +267,6 @@
 
     let currentURL = "";
 
-    let currentWaybackURL = "";
-
     let isYouTube = false;
 
 
@@ -288,23 +277,14 @@
      */
 
     function setStatus(message) {
-
         statusBox.textContent = message;
-
     }
 
 
     /*
      * ==========================================
-     * NORMALIZE URL
+     * URL NORMALIZATION
      * ==========================================
-     *
-     * Allows:
-     *
-     * example.com
-     * https://example.com
-     * youtube.com/watch?v=123
-     *
      */
 
     function normalizeURL(input) {
@@ -315,12 +295,19 @@
             return null;
         }
 
+
+        /*
+         * If the user types something that looks
+         * like a URL without https://, add it.
+         */
+
         if (!/^https?:\/\//i.test(input)) {
 
             input =
                 "https://" + input;
 
         }
+
 
         try {
 
@@ -336,14 +323,12 @@
 
     /*
      * ==========================================
-     * YOUTUBE VIDEO DETECTION
+     * YOUTUBE DETECTION
      * ==========================================
      *
-     * Supports:
+     * Supported:
      *
      * youtube.com/watch?v=ID
-     * www.youtube.com/watch?v=ID
-     * m.youtube.com/watch?v=ID
      * youtu.be/ID
      * youtube.com/shorts/ID
      * youtube.com/embed/ID
@@ -362,7 +347,7 @@
 
 
             /*
-             * Regular YouTube domains
+             * youtube.com
              */
 
             if (
@@ -372,7 +357,9 @@
             ) {
 
                 /*
-                 * /watch?v=VIDEO_ID
+                 * Normal video:
+                 *
+                 * youtube.com/watch?v=VIDEO_ID
                  */
 
                 if (
@@ -389,7 +376,7 @@
 
 
                 /*
-                 * /shorts/VIDEO_ID
+                 * YouTube Shorts
                  */
 
                 if (
@@ -400,11 +387,12 @@
                         .split("/")[2]
                         ?.split("?")[0]
                         ?.split("&")[0] || null;
+
                 }
 
 
                 /*
-                 * /embed/VIDEO_ID
+                 * Existing embed URL
                  */
 
                 if (
@@ -415,13 +403,14 @@
                         .split("/")[2]
                         ?.split("?")[0]
                         ?.split("&")[0] || null;
+
                 }
 
             }
 
 
             /*
-             * youtu.be/VIDEO_ID
+             * youtu.be
              */
 
             if (
@@ -455,6 +444,7 @@
 
         isYouTube = true;
 
+
         const embedURL =
             "https://www.youtube.com/embed/"
             + encodeURIComponent(videoID)
@@ -464,12 +454,13 @@
         currentURL =
             embedURL;
 
-        currentWaybackURL =
-            "";
+
+        urlInput.value =
+            embedURL;
 
 
         setStatus(
-            "YouTube video detected. Loading player..."
+            "Loading YouTube video..."
         );
 
 
@@ -480,75 +471,11 @@
 
     /*
      * ==========================================
-     * WAYBACK CHECK
+     * LOAD URL
      * ==========================================
      */
 
-    async function checkWayback(url) {
-
-        const apiURL =
-            "https://archive.org/wayback/available?url="
-            + encodeURIComponent(url);
-
-
-        const response =
-            await fetch(apiURL);
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Wayback request failed."
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            data.archived_snapshots &&
-            data.archived_snapshots.closest &&
-            data.archived_snapshots.closest.url
-        ) {
-
-            return data
-                .archived_snapshots
-                .closest
-                .url;
-
-        }
-
-
-        return null;
-    }
-
-
-    /*
-     * ==========================================
-     * OPEN URL
-     * ==========================================
-     */
-
-    async function openURL() {
-
-        const url =
-            normalizeURL(
-                urlInput.value
-            );
-
-
-        if (!url) {
-
-            setStatus(
-                "Please enter a valid URL."
-            );
-
-            return;
-        }
-
+    function loadURL(url) {
 
         /*
          * Check for YouTube first.
@@ -565,6 +492,7 @@
             );
 
             return;
+
         }
 
 
@@ -577,126 +505,12 @@
         currentURL =
             url;
 
-
-        setStatus(
-            "Checking the Wayback Machine..."
-        );
-
-
-        try {
-
-            const archivedURL =
-                await checkWayback(url);
-
-
-            if (archivedURL) {
-
-                currentWaybackURL =
-                    archivedURL;
-
-
-                setStatus(
-                    "Archived snapshot found. Loading..."
-                );
-
-
-                viewer.src =
-                    archivedURL;
-
-            } else {
-
-                currentWaybackURL =
-                    "";
-
-
-                setStatus(
-                    "No archived snapshot found. Loading live page..."
-                );
-
-
-                viewer.src =
-                    url;
-
-            }
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            currentWaybackURL =
-                "";
-
-
-            setStatus(
-                "Wayback could not be reached. Loading live page..."
-            );
-
-
-            viewer.src =
-                url;
-        }
-    }
-
-
-    /*
-     * ==========================================
-     * LIVE PAGE
-     * ==========================================
-     */
-
-    function openLive() {
-
-        let url =
-            currentURL;
-
-
-        if (!url) {
-
-            url =
-                normalizeURL(
-                    urlInput.value
-                );
-
-        }
-
-
-        if (!url) {
-
-            setStatus(
-                "Enter a URL first."
-            );
-
-            return;
-        }
-
-
-        /*
-         * Check for YouTube.
-         */
-
-        const youtubeID =
-            getYouTubeVideoID(url);
-
-
-        if (youtubeID) {
-
-            openYouTube(
-                youtubeID
-            );
-
-            return;
-        }
-
-
-        isYouTube = false;
-
-        currentURL =
+        urlInput.value =
             url;
 
 
         setStatus(
-            "Loading live page..."
+            "Loading " + url
         );
 
 
@@ -707,12 +521,40 @@
 
     /*
      * ==========================================
+     * GO BUTTON
+     * ==========================================
+     */
+
+    function openURL() {
+
+        const url =
+            normalizeURL(
+                urlInput.value
+            );
+
+
+        if (!url) {
+
+            setStatus(
+                "Please enter a valid URL."
+            );
+
+            return;
+
+        }
+
+
+        loadURL(url);
+    }
+
+
+    /*
+     * ==========================================
      * WEB SEARCH
      * ==========================================
      *
-     * The search results are loaded into the
-     * existing iframe rather than opening a
-     * separate tab.
+     * Search results are loaded directly into
+     * the iframe.
      *
      */
 
@@ -729,15 +571,12 @@
             );
 
             return;
+
         }
 
 
-        /*
-         * Bing search URL.
-         */
-
         const searchURL =
-            "https://www.bing.com/search?q="
+            "https://www.google.com/search?q="
             + encodeURIComponent(query);
 
 
@@ -746,8 +585,9 @@
         currentURL =
             searchURL;
 
-        currentWaybackURL =
-            "";
+
+        urlInput.value =
+            searchURL;
 
 
         setStatus(
@@ -757,6 +597,54 @@
 
         viewer.src =
             searchURL;
+    }
+
+
+    /*
+     * ==========================================
+     * BACK
+     * ==========================================
+     */
+
+    function goBack() {
+
+        try {
+
+            viewer.contentWindow
+                .history
+                .back();
+
+        } catch {
+
+            setStatus(
+                "Back navigation is unavailable for this page."
+            );
+
+        }
+    }
+
+
+    /*
+     * ==========================================
+     * FORWARD
+     * ==========================================
+     */
+
+    function goForward() {
+
+        try {
+
+            viewer.contentWindow
+                .history
+                .forward();
+
+        } catch {
+
+            setStatus(
+                "Forward navigation is unavailable for this page."
+            );
+
+        }
     }
 
 
@@ -795,55 +683,37 @@
 
     /*
      * ==========================================
-     * BACK
+     * HOME
      * ==========================================
      */
 
-    function goBack() {
+    function goHome() {
 
-        try {
+        viewer.src =
+            "about:blank";
 
-            viewer.contentWindow
-                .history
-                .back();
 
-        } catch {
+        urlInput.value =
+            "";
 
-            setStatus(
-                "The embedded page does not allow history control."
-            );
 
-        }
+        currentURL =
+            "";
+
+
+        isYouTube =
+            false;
+
+
+        setStatus(
+            "Ready."
+        );
     }
 
 
     /*
      * ==========================================
-     * FORWARD
-     * ==========================================
-     */
-
-    function goForward() {
-
-        try {
-
-            viewer.contentWindow
-                .history
-                .forward();
-
-        } catch {
-
-            setStatus(
-                "The embedded page does not allow history control."
-            );
-
-        }
-    }
-
-
-    /*
-     * ==========================================
-     * BUTTON EVENTS
+     * EVENTS
      * ==========================================
      */
 
@@ -888,16 +758,16 @@
 
 
     document
-        .getElementById("liveButton")
+        .getElementById("homeButton")
         .addEventListener(
             "click",
-            openLive
+            goHome
         );
 
 
     /*
      * ==========================================
-     * SEARCH ENTER KEY
+     * ENTER — SEARCH
      * ==========================================
      */
 
@@ -917,7 +787,7 @@
 
     /*
      * ==========================================
-     * URL ENTER KEY
+     * ENTER — URL
      * ==========================================
      */
 
