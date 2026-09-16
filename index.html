@@ -1,182 +1,669 @@
+```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Wayback Machine Search</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Wayback Machine Viewer</title>
+
     <style>
-        /* Custom CSS for the interface */
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            background-color: #0074d9; /* Blue background */
-            color: #fff; /* White text */
+            margin: 0;
+            background-color: #0074d9;
+            color: #fff;
             font-family: Arial, sans-serif;
-            text-align: center;
         }
 
         h1 {
-            color: #ff4136; /* Red heading */
+            color: #ff4136;
+            text-align: center;
+            margin: 20px 0 5px;
         }
 
-        .search-box {
-            margin: 20px 0;
+        .subtitle {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .toolbar {
             display: flex;
             justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 15px auto;
+            padding: 0 15px;
         }
 
-        input[type="text"] {
-            width: 300px;
-            padding: 10px;
+        #urlInput {
+            width: min(600px, 80vw);
+            padding: 12px;
             font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            outline: none;
         }
 
         button {
-            background-color: #2ecc40; /* Green button */
+            background-color: #2ecc40;
             color: #fff;
             border: none;
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 12px 18px;
+            font-size: 15px;
+            border-radius: 4px;
             cursor: pointer;
         }
 
         button:hover {
-            background-color: #27ae60; /* Darker green on hover */
+            background-color: #27ae60;
         }
 
-        #searchResults {
-            text-align: left;
-            margin: 20px;
+        button.secondary {
+            background-color: #ff4136;
         }
 
-        ul {
-            list-style-type: none;
-            padding: 0;
+        button.secondary:hover {
+            background-color: #d9534f;
         }
 
-        li {
-            margin: 10px 0;
-        }
-
-        a {
-            color: #ff4136; /* Red link */
-            text-decoration: none;
+        #status {
+            text-align: center;
+            margin: 15px;
+            min-height: 20px;
             font-weight: bold;
         }
 
-        a:hover {
-            color: #d9534f; /* Darker red on hover */
+        .viewer-container {
+            width: 95%;
+            height: calc(100vh - 190px);
+            min-height: 500px;
+            margin: 0 auto 20px;
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
         }
 
-        iframe {
+        #viewer {
             width: 100%;
-            height: 500px;
+            height: 100%;
+            border: none;
+            background: white;
         }
 
-        /* Your CSS styles here */
-        #embeddedContent {
-            width: 100%;
-            height: 500px;
+        .info {
+            text-align: center;
+            font-size: 13px;
+            margin: 8px;
+        }
+
+        @media (max-width: 600px) {
+
+            #urlInput {
+                width: 100%;
+            }
+
+            button {
+                flex: 1;
+            }
+
+            .viewer-container {
+                width: 100%;
+                border-radius: 0;
+            }
         }
     </style>
 </head>
+
 <body>
-    <h1>Wayback Machine Search</h1>
-    <div id="webSearch">
-        <input type="text" id="webSearchInput" placeholder="Search for Web Links">
-        <button id="webSearchButton">Search</button>
-    </div>
-    <div id="imageSearch">
-        <input type="text" id="imageSearchInput" placeholder="Search for Images">
-        <button id="imageSearchButton">Search</button>
-    </div>
-    <div id="searchResults">
-        <!-- Search results will be displayed here -->
+
+    <h1>Wayback Machine Viewer</h1>
+
+    <div class="subtitle">
+        Enter a webpage or YouTube URL
     </div>
 
-    <script>
-        document.getElementById("webSearchButton").addEventListener("click", function() {
-            var query = document.getElementById("webSearchInput").value;
+    <div class="toolbar">
 
-            // Use Google Custom Search API to search for web links
-            // Replace 'YOUR_API_KEY' and 'YOUR_CX' with your actual API key and custom search engine ID
-            var googleCustomSearchURL = `https://www.googleapis.com/customsearch/v1?q=${query}&key=AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo&cx=718cd7b701a714611`;
+        <input
+            type="text"
+            id="urlInput"
+            placeholder="https://example.com"
+            autocomplete="off"
+            spellcheck="false"
+        >
 
-            fetch(googleCustomSearchURL)
-                .then(response => response.json())
-                .then(data => {
-                    // Handle search results here and display them in "searchResults" div
-                    var results = data.items;
-                    var resultsHTML = '<ul>';
-                    results.forEach(result => {
-                        if (result.link) {
-                            // Display links
-                            resultsHTML += `<li><a href="javascript:embedWayback('${result.link}')">${result.title}</a></li>`;
-                        }
-                    });
-                    resultsHTML += '</ul>';
-                    document.getElementById("searchResults").innerHTML = resultsHTML;
-                })
-                .catch(error => console.error(error));
-        });
+        <button id="goButton">
+            Go
+        </button>
 
-        document.getElementById("imageSearchButton").addEventListener("click", function() {
-            var query = document.getElementById("imageSearchInput").value;
+        <button id="backButton">
+            ← Back
+        </button>
 
-            // Use Google Custom Search API to search for images
-            // Replace 'YOUR_API_KEY' and 'YOUR_CX' with your actual API key and custom search engine ID
-            var googleCustomSearchURL = `https://www.googleapis.com/customsearch/v1?q=${query}&key=AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo&cx=718cd7b701a714611`;
+        <button id="forwardButton">
+            Forward →
+        </button>
 
-            fetch(googleCustomSearchURL)
-                .then(response => response.json())
-                .then(data => {
-                    // Handle image search results here and display them in "searchResults" div
-                    var results = data.items;
-                    var resultsHTML = '<ul>';
-                    results.forEach(result => {
-                        if (result.pagemap && result.pagemap.cse_thumbnail) {
-                            // Display images
-                            resultsHTML += `<li><img src="${result.pagemap.cse_thumbnail[0].src}"></li>`;
-                        }
-                    });
-                    resultsHTML += '</ul>';
-                    document.getElementById("searchResults").innerHTML = resultsHTML;
-                })
-                .catch(error => console.error(error));
-        });
+        <button id="reloadButton">
+            Reload
+        </button>
 
-        function embedWayback(originalLink) {
-            var waybackURL = `https://archive.org/wayback/available?url=${originalLink}`;
+        <button
+            id="liveButton"
+            class="secondary">
+            Live Page
+        </button>
 
-            fetch(waybackURL)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.archived_snapshots.closest) {
-                        // If the site exists in Wayback Machine, try to embed it
-                        var archiveURL = data.archived_snapshots.closest.url;
+    </div>
 
-                        // Create an iframe and attempt to embed the archive
-                        var iframe = document.createElement("iframe");
-                        iframe.src = archiveURL;
-                        iframe.id = "embeddedContent";
-                        iframe.style.width = "100%";
-                        iframe.style.height = "500px";
+    <div id="status">
+        Ready.
+    </div>
 
-                        // Replace the content of "searchResults" with the iframe
-                        document.getElementById("searchResults").innerHTML = "";
-                        document.getElementById("searchResults").appendChild(iframe);
+    <div class="viewer-container">
 
-                        // Intercept clicks within the iframe and open the links within the iframe
-                        iframe.contentWindow.document.addEventListener("click", function(event) {
-                            if (event.target.tagName === "A") {
-                                event.preventDefault();
-                                embedWayback(event.target.href);
-                            }
-                        });
-                    } else {
-                        // If the site doesn't exist, open the archive in a new tab
-                        window.open(archiveURL, "_blank");
-                    }
-                })
-                .catch(error => console.error(error));
+        <iframe
+            id="viewer"
+            title="Webpage viewer"
+            allow="
+                autoplay;
+                encrypted-media;
+                fullscreen;
+                picture-in-picture;
+            "
+            allowfullscreen>
+        </iframe>
+
+    </div>
+
+    <div class="info">
+        Archived pages are provided through the Internet Archive's
+        Wayback Machine.
+    </div>
+
+
+<script>
+
+    const urlInput = document.getElementById("urlInput");
+    const viewer = document.getElementById("viewer");
+    const statusBox = document.getElementById("status");
+
+    let currentURL = "";
+    let currentWaybackURL = "";
+    let isYouTube = false;
+
+
+    /*
+     * Display a status message.
+     */
+    function setStatus(message) {
+        statusBox.textContent = message;
+    }
+
+
+    /*
+     * Turn a user-entered URL into a proper URL.
+     */
+    function normalizeURL(input) {
+
+        input = input.trim();
+
+        if (!input) {
+            return null;
         }
-    </script>
+
+        /*
+         * Allow users to type things like:
+         *
+         * example.com
+         * youtube.com/watch?v=123
+         *
+         * without manually typing https://
+         */
+        if (!/^https?:\/\//i.test(input)) {
+            input = "https://" + input;
+        }
+
+        try {
+            return new URL(input).href;
+        } catch {
+            return null;
+        }
+    }
+
+
+    /*
+     * Extract a YouTube video ID.
+     *
+     * Supported:
+     *
+     * youtube.com/watch?v=VIDEO_ID
+     * youtu.be/VIDEO_ID
+     * youtube.com/shorts/VIDEO_ID
+     * youtube.com/embed/VIDEO_ID
+     */
+    function getYouTubeVideoID(url) {
+
+        try {
+
+            const parsed = new URL(url);
+
+            const hostname =
+                parsed.hostname.toLowerCase();
+
+            /*
+             * Regular YouTube URLs.
+             */
+            if (
+                hostname === "youtube.com" ||
+                hostname === "www.youtube.com" ||
+                hostname === "m.youtube.com"
+            ) {
+
+                /*
+                 * /watch?v=...
+                 */
+                if (parsed.pathname === "/watch") {
+
+                    const videoID =
+                        parsed.searchParams.get("v");
+
+                    if (videoID) {
+                        return videoID;
+                    }
+                }
+
+
+                /*
+                 * /shorts/VIDEO_ID
+                 */
+                if (parsed.pathname.startsWith("/shorts/")) {
+
+                    return parsed.pathname
+                        .split("/")[2]
+                        ?.split("?")[0]
+                        ?.split("&")[0] || null;
+                }
+
+
+                /*
+                 * /embed/VIDEO_ID
+                 */
+                if (parsed.pathname.startsWith("/embed/")) {
+
+                    return parsed.pathname
+                        .split("/")[2]
+                        ?.split("?")[0]
+                        ?.split("&")[0] || null;
+                }
+
+            }
+
+
+            /*
+             * youtu.be/VIDEO_ID
+             */
+            if (hostname === "youtu.be") {
+
+                return parsed.pathname
+                    .split("/")[1]
+                    ?.split("?")[0]
+                    ?.split("&")[0] || null;
+            }
+
+        } catch {
+            return null;
+        }
+
+        return null;
+    }
+
+
+    /*
+     * Open a YouTube video using the official
+     * embedded player.
+     */
+    function openYouTube(videoID) {
+
+        isYouTube = true;
+
+        const embedURL =
+            "https://www.youtube.com/embed/"
+            + encodeURIComponent(videoID)
+            + "?autoplay=0";
+
+        currentURL = embedURL;
+
+        currentWaybackURL = "";
+
+        setStatus(
+            "YouTube video detected. Loading player..."
+        );
+
+        viewer.src = embedURL;
+    }
+
+
+    /*
+     * Check the Wayback Machine for an archived
+     * version of the requested webpage.
+     */
+    async function checkWayback(url) {
+
+        const apiURL =
+            "https://archive.org/wayback/available?url="
+            + encodeURIComponent(url);
+
+        const response =
+            await fetch(apiURL);
+
+        if (!response.ok) {
+            throw new Error(
+                "Wayback request failed."
+            );
+        }
+
+        const data =
+            await response.json();
+
+        if (
+            data.archived_snapshots &&
+            data.archived_snapshots.closest &&
+            data.archived_snapshots.closest.url
+        ) {
+
+            return data.archived_snapshots.closest.url;
+
+        }
+
+        return null;
+    }
+
+
+    /*
+     * Main Go button.
+     */
+    async function openURL() {
+
+        const url =
+            normalizeURL(urlInput.value);
+
+        if (!url) {
+
+            setStatus(
+                "Please enter a valid URL."
+            );
+
+            return;
+        }
+
+
+        /*
+         * First check whether this is YouTube.
+         */
+        const youtubeID =
+            getYouTubeVideoID(url);
+
+        if (youtubeID) {
+
+            openYouTube(youtubeID);
+
+            return;
+        }
+
+
+        /*
+         * Normal webpage.
+         */
+        isYouTube = false;
+
+        currentURL = url;
+
+        setStatus(
+            "Checking the Wayback Machine..."
+        );
+
+
+        try {
+
+            const archivedURL =
+                await checkWayback(url);
+
+            if (archivedURL) {
+
+                currentWaybackURL =
+                    archivedURL;
+
+                setStatus(
+                    "Archived snapshot found. Loading..."
+                );
+
+                viewer.src =
+                    archivedURL;
+
+            } else {
+
+                currentWaybackURL = "";
+
+                setStatus(
+                    "No archived snapshot found. Loading live page..."
+                );
+
+                viewer.src =
+                    url;
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+            currentWaybackURL = "";
+
+            setStatus(
+                "Wayback could not be reached. Loading live page..."
+            );
+
+            viewer.src =
+                url;
+        }
+    }
+
+
+    /*
+     * Open the original live URL.
+     */
+    function openLive() {
+
+        if (!currentURL) {
+
+            const url =
+                normalizeURL(urlInput.value);
+
+            if (!url) {
+
+                setStatus(
+                    "Enter a URL first."
+                );
+
+                return;
+            }
+
+            currentURL = url;
+        }
+
+
+        /*
+         * Don't accidentally treat a YouTube
+         * embed URL as the original page.
+         */
+        const youtubeID =
+            getYouTubeVideoID(currentURL);
+
+        if (youtubeID) {
+
+            openYouTube(youtubeID);
+
+            return;
+        }
+
+
+        isYouTube = false;
+
+        setStatus(
+            "Loading live page..."
+        );
+
+        viewer.src =
+            currentURL;
+    }
+
+
+    /*
+     * Reload whatever is currently displayed.
+     */
+    function reloadViewer() {
+
+        if (!viewer.src) {
+            return;
+        }
+
+        try {
+
+            viewer.contentWindow.location.reload();
+
+        } catch {
+
+            /*
+             * Cross-origin pages prevent direct access
+             * to location.reload(), so resetting src
+             * is the fallback.
+             */
+            const current =
+                viewer.src;
+
+            viewer.src = "";
+
+            setTimeout(() => {
+                viewer.src = current;
+            }, 50);
+        }
+    }
+
+
+    /*
+     * Go backward inside the iframe when possible.
+     */
+    function goBack() {
+
+        try {
+
+            viewer.contentWindow.history.back();
+
+        } catch {
+
+            setStatus(
+                "The embedded page does not allow history control."
+            );
+        }
+    }
+
+
+    /*
+     * Go forward inside the iframe when possible.
+     */
+    function goForward() {
+
+        try {
+
+            viewer.contentWindow.history.forward();
+
+        } catch {
+
+            setStatus(
+                "The embedded page does not allow history control."
+            );
+        }
+    }
+
+
+    /*
+     * Button events.
+     */
+    document
+        .getElementById("goButton")
+        .addEventListener(
+            "click",
+            openURL
+        );
+
+    document
+        .getElementById("liveButton")
+        .addEventListener(
+            "click",
+            openLive
+        );
+
+    document
+        .getElementById("backButton")
+        .addEventListener(
+            "click",
+            goBack
+        );
+
+    document
+        .getElementById("forwardButton")
+        .addEventListener(
+            "click",
+            goForward
+        );
+
+    document
+        .getElementById("reloadButton")
+        .addEventListener(
+            "click",
+            reloadViewer
+        );
+
+
+    /*
+     * Press Enter to navigate.
+     */
+    urlInput.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key === "Enter") {
+                openURL();
+            }
+
+        }
+    );
+
+
+    /*
+     * Show errors that occur while loading
+     * the iframe itself.
+     */
+    viewer.addEventListener(
+        "load",
+        function() {
+
+            if (isYouTube) {
+                setStatus("YouTube player loaded.");
+            } else {
+                setStatus("Page loaded.");
+            }
+
+        }
+    );
+
+</script>
+
 </body>
 </html>
-
+```
