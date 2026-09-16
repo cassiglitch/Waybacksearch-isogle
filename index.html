@@ -27,20 +27,24 @@
 
         .subtitle {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
-        .toolbar {
+        .search-section,
+        .navigation {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
-            margin: 15px auto;
             padding: 0 15px;
         }
 
-        #urlInput {
+        .navigation {
+            margin-top: 10px;
+        }
+
+        input[type="text"] {
             width: min(600px, 80vw);
             padding: 12px;
             font-size: 16px;
@@ -71,19 +75,28 @@
             background-color: #d9534f;
         }
 
+        button.blue {
+            background-color: #0074d9;
+            border: 2px solid #fff;
+        }
+
+        button.blue:hover {
+            background-color: #005fae;
+        }
+
         #status {
             text-align: center;
-            margin: 15px;
+            margin: 14px;
             min-height: 20px;
             font-weight: bold;
         }
 
         .viewer-container {
             width: 95%;
-            height: calc(100vh - 190px);
+            height: calc(100vh - 270px);
             min-height: 500px;
             margin: 0 auto 20px;
-            background: white;
+            background: #fff;
             border-radius: 6px;
             overflow: hidden;
         }
@@ -92,7 +105,7 @@
             width: 100%;
             height: 100%;
             border: none;
-            background: white;
+            background: #fff;
         }
 
         .info {
@@ -101,9 +114,16 @@
             margin: 8px;
         }
 
-        @media (max-width: 600px) {
+        .divider {
+            width: 80%;
+            max-width: 900px;
+            height: 1px;
+            background: rgba(255,255,255,0.35);
+            margin: 15px auto;
+        }
 
-            #urlInput {
+        @media (max-width: 600px) {
+            input[type="text"] {
                 width: 100%;
             }
 
@@ -124,10 +144,39 @@
     <h1>Wayback Machine Viewer</h1>
 
     <div class="subtitle">
-        Enter a webpage or YouTube URL
+        Search the web, browse archived pages, or watch YouTube
     </div>
 
-    <div class="toolbar">
+
+    <!-- =========================
+         WEB SEARCH
+         ========================= -->
+
+    <div class="search-section">
+
+        <input
+            type="text"
+            id="searchInput"
+            placeholder="Search the web..."
+            autocomplete="off"
+            spellcheck="false"
+        >
+
+        <button id="searchButton">
+            🔎 Search
+        </button>
+
+    </div>
+
+
+    <div class="divider"></div>
+
+
+    <!-- =========================
+         URL NAVIGATION
+         ========================= -->
+
+    <div class="navigation">
 
         <input
             type="text"
@@ -161,9 +210,19 @@
 
     </div>
 
+
+    <!-- =========================
+         STATUS
+         ========================= -->
+
     <div id="status">
         Ready.
     </div>
+
+
+    <!-- =========================
+         VIEWER
+         ========================= -->
 
     <div class="viewer-container">
 
@@ -181,6 +240,7 @@
 
     </div>
 
+
     <div class="info">
         Archived pages are provided through the Internet Archive's
         Wayback Machine.
@@ -189,26 +249,64 @@
 
 <script>
 
-    const urlInput = document.getElementById("urlInput");
-    const viewer = document.getElementById("viewer");
-    const statusBox = document.getElementById("status");
+    /*
+     * ==========================================
+     * ELEMENTS
+     * ==========================================
+     */
+
+    const searchInput =
+        document.getElementById("searchInput");
+
+    const urlInput =
+        document.getElementById("urlInput");
+
+    const viewer =
+        document.getElementById("viewer");
+
+    const statusBox =
+        document.getElementById("status");
+
+
+    /*
+     * ==========================================
+     * STATE
+     * ==========================================
+     */
 
     let currentURL = "";
+
     let currentWaybackURL = "";
+
     let isYouTube = false;
 
 
     /*
-     * Display a status message.
+     * ==========================================
+     * STATUS
+     * ==========================================
      */
+
     function setStatus(message) {
+
         statusBox.textContent = message;
+
     }
 
 
     /*
-     * Turn a user-entered URL into a proper URL.
+     * ==========================================
+     * NORMALIZE URL
+     * ==========================================
+     *
+     * Allows:
+     *
+     * example.com
+     * https://example.com
+     * youtube.com/watch?v=123
+     *
      */
+
     function normalizeURL(input) {
 
         input = input.trim();
@@ -217,48 +315,56 @@
             return null;
         }
 
-        /*
-         * Allow users to type things like:
-         *
-         * example.com
-         * youtube.com/watch?v=123
-         *
-         * without manually typing https://
-         */
         if (!/^https?:\/\//i.test(input)) {
-            input = "https://" + input;
+
+            input =
+                "https://" + input;
+
         }
 
         try {
+
             return new URL(input).href;
+
         } catch {
+
             return null;
+
         }
     }
 
 
     /*
-     * Extract a YouTube video ID.
+     * ==========================================
+     * YOUTUBE VIDEO DETECTION
+     * ==========================================
      *
-     * Supported:
+     * Supports:
      *
-     * youtube.com/watch?v=VIDEO_ID
-     * youtu.be/VIDEO_ID
-     * youtube.com/shorts/VIDEO_ID
-     * youtube.com/embed/VIDEO_ID
+     * youtube.com/watch?v=ID
+     * www.youtube.com/watch?v=ID
+     * m.youtube.com/watch?v=ID
+     * youtu.be/ID
+     * youtube.com/shorts/ID
+     * youtube.com/embed/ID
+     *
      */
+
     function getYouTubeVideoID(url) {
 
         try {
 
-            const parsed = new URL(url);
+            const parsed =
+                new URL(url);
 
             const hostname =
                 parsed.hostname.toLowerCase();
 
+
             /*
-             * Regular YouTube URLs.
+             * Regular YouTube domains
              */
+
             if (
                 hostname === "youtube.com" ||
                 hostname === "www.youtube.com" ||
@@ -266,15 +372,18 @@
             ) {
 
                 /*
-                 * /watch?v=...
+                 * /watch?v=VIDEO_ID
                  */
-                if (parsed.pathname === "/watch") {
 
-                    const videoID =
+                if (
+                    parsed.pathname === "/watch"
+                ) {
+
+                    const id =
                         parsed.searchParams.get("v");
 
-                    if (videoID) {
-                        return videoID;
+                    if (id) {
+                        return id;
                     }
                 }
 
@@ -282,7 +391,10 @@
                 /*
                  * /shorts/VIDEO_ID
                  */
-                if (parsed.pathname.startsWith("/shorts/")) {
+
+                if (
+                    parsed.pathname.startsWith("/shorts/")
+                ) {
 
                     return parsed.pathname
                         .split("/")[2]
@@ -294,7 +406,10 @@
                 /*
                  * /embed/VIDEO_ID
                  */
-                if (parsed.pathname.startsWith("/embed/")) {
+
+                if (
+                    parsed.pathname.startsWith("/embed/")
+                ) {
 
                     return parsed.pathname
                         .split("/")[2]
@@ -308,16 +423,22 @@
             /*
              * youtu.be/VIDEO_ID
              */
-            if (hostname === "youtu.be") {
+
+            if (
+                hostname === "youtu.be"
+            ) {
 
                 return parsed.pathname
                     .split("/")[1]
                     ?.split("?")[0]
                     ?.split("&")[0] || null;
+
             }
 
         } catch {
+
             return null;
+
         }
 
         return null;
@@ -325,9 +446,11 @@
 
 
     /*
-     * Open a YouTube video using the official
-     * embedded player.
+     * ==========================================
+     * OPEN YOUTUBE
+     * ==========================================
      */
+
     function openYouTube(videoID) {
 
         isYouTube = true;
@@ -337,39 +460,53 @@
             + encodeURIComponent(videoID)
             + "?autoplay=0";
 
-        currentURL = embedURL;
 
-        currentWaybackURL = "";
+        currentURL =
+            embedURL;
+
+        currentWaybackURL =
+            "";
+
 
         setStatus(
             "YouTube video detected. Loading player..."
         );
 
-        viewer.src = embedURL;
+
+        viewer.src =
+            embedURL;
     }
 
 
     /*
-     * Check the Wayback Machine for an archived
-     * version of the requested webpage.
+     * ==========================================
+     * WAYBACK CHECK
+     * ==========================================
      */
+
     async function checkWayback(url) {
 
         const apiURL =
             "https://archive.org/wayback/available?url="
             + encodeURIComponent(url);
 
+
         const response =
             await fetch(apiURL);
 
+
         if (!response.ok) {
+
             throw new Error(
                 "Wayback request failed."
             );
+
         }
+
 
         const data =
             await response.json();
+
 
         if (
             data.archived_snapshots &&
@@ -377,21 +514,31 @@
             data.archived_snapshots.closest.url
         ) {
 
-            return data.archived_snapshots.closest.url;
+            return data
+                .archived_snapshots
+                .closest
+                .url;
 
         }
+
 
         return null;
     }
 
 
     /*
-     * Main Go button.
+     * ==========================================
+     * OPEN URL
+     * ==========================================
      */
+
     async function openURL() {
 
         const url =
-            normalizeURL(urlInput.value);
+            normalizeURL(
+                urlInput.value
+            );
+
 
         if (!url) {
 
@@ -404,14 +551,18 @@
 
 
         /*
-         * First check whether this is YouTube.
+         * Check for YouTube first.
          */
+
         const youtubeID =
             getYouTubeVideoID(url);
 
+
         if (youtubeID) {
 
-            openYouTube(youtubeID);
+            openYouTube(
+                youtubeID
+            );
 
             return;
         }
@@ -420,9 +571,12 @@
         /*
          * Normal webpage.
          */
+
         isYouTube = false;
 
-        currentURL = url;
+        currentURL =
+            url;
+
 
         setStatus(
             "Checking the Wayback Machine..."
@@ -434,39 +588,50 @@
             const archivedURL =
                 await checkWayback(url);
 
+
             if (archivedURL) {
 
                 currentWaybackURL =
                     archivedURL;
 
+
                 setStatus(
                     "Archived snapshot found. Loading..."
                 );
+
 
                 viewer.src =
                     archivedURL;
 
             } else {
 
-                currentWaybackURL = "";
+                currentWaybackURL =
+                    "";
+
 
                 setStatus(
                     "No archived snapshot found. Loading live page..."
                 );
 
+
                 viewer.src =
                     url;
+
             }
 
         } catch (error) {
 
             console.error(error);
 
-            currentWaybackURL = "";
+
+            currentWaybackURL =
+                "";
+
 
             setStatus(
                 "Wayback could not be reached. Loading live page..."
             );
+
 
             viewer.src =
                 url;
@@ -475,38 +640,50 @@
 
 
     /*
-     * Open the original live URL.
+     * ==========================================
+     * LIVE PAGE
+     * ==========================================
      */
+
     function openLive() {
 
-        if (!currentURL) {
+        let url =
+            currentURL;
 
-            const url =
-                normalizeURL(urlInput.value);
 
-            if (!url) {
+        if (!url) {
 
-                setStatus(
-                    "Enter a URL first."
+            url =
+                normalizeURL(
+                    urlInput.value
                 );
 
-                return;
-            }
+        }
 
-            currentURL = url;
+
+        if (!url) {
+
+            setStatus(
+                "Enter a URL first."
+            );
+
+            return;
         }
 
 
         /*
-         * Don't accidentally treat a YouTube
-         * embed URL as the original page.
+         * Check for YouTube.
          */
+
         const youtubeID =
-            getYouTubeVideoID(currentURL);
+            getYouTubeVideoID(url);
+
 
         if (youtubeID) {
 
-            openYouTube(youtubeID);
+            openYouTube(
+                youtubeID
+            );
 
             return;
         }
@@ -514,86 +691,170 @@
 
         isYouTube = false;
 
+        currentURL =
+            url;
+
+
         setStatus(
             "Loading live page..."
         );
 
+
         viewer.src =
-            currentURL;
+            url;
     }
 
 
     /*
-     * Reload whatever is currently displayed.
+     * ==========================================
+     * WEB SEARCH
+     * ==========================================
+     *
+     * The search results are loaded into the
+     * existing iframe rather than opening a
+     * separate tab.
+     *
      */
+
+    function webSearch() {
+
+        const query =
+            searchInput.value.trim();
+
+
+        if (!query) {
+
+            setStatus(
+                "Enter something to search for."
+            );
+
+            return;
+        }
+
+
+        /*
+         * Bing search URL.
+         */
+
+        const searchURL =
+            "https://www.bing.com/search?q="
+            + encodeURIComponent(query);
+
+
+        isYouTube = false;
+
+        currentURL =
+            searchURL;
+
+        currentWaybackURL =
+            "";
+
+
+        setStatus(
+            "Loading search results..."
+        );
+
+
+        viewer.src =
+            searchURL;
+    }
+
+
+    /*
+     * ==========================================
+     * RELOAD
+     * ==========================================
+     */
+
     function reloadViewer() {
 
         if (!viewer.src) {
             return;
         }
 
-        try {
 
-            viewer.contentWindow.location.reload();
+        const current =
+            viewer.src;
 
-        } catch {
 
-            /*
-             * Cross-origin pages prevent direct access
-             * to location.reload(), so resetting src
-             * is the fallback.
-             */
-            const current =
-                viewer.src;
+        viewer.src =
+            "";
 
-            viewer.src = "";
 
-            setTimeout(() => {
-                viewer.src = current;
-            }, 50);
-        }
+        setTimeout(
+            function() {
+
+                viewer.src =
+                    current;
+
+            },
+            50
+        );
     }
 
 
     /*
-     * Go backward inside the iframe when possible.
+     * ==========================================
+     * BACK
+     * ==========================================
      */
+
     function goBack() {
 
         try {
 
-            viewer.contentWindow.history.back();
+            viewer.contentWindow
+                .history
+                .back();
 
         } catch {
 
             setStatus(
                 "The embedded page does not allow history control."
             );
+
         }
     }
 
 
     /*
-     * Go forward inside the iframe when possible.
+     * ==========================================
+     * FORWARD
+     * ==========================================
      */
+
     function goForward() {
 
         try {
 
-            viewer.contentWindow.history.forward();
+            viewer.contentWindow
+                .history
+                .forward();
 
         } catch {
 
             setStatus(
                 "The embedded page does not allow history control."
             );
+
         }
     }
 
 
     /*
-     * Button events.
+     * ==========================================
+     * BUTTON EVENTS
+     * ==========================================
      */
+
+    document
+        .getElementById("searchButton")
+        .addEventListener(
+            "click",
+            webSearch
+        );
+
+
     document
         .getElementById("goButton")
         .addEventListener(
@@ -601,12 +862,6 @@
             openURL
         );
 
-    document
-        .getElementById("liveButton")
-        .addEventListener(
-            "click",
-            openLive
-        );
 
     document
         .getElementById("backButton")
@@ -615,12 +870,14 @@
             goBack
         );
 
+
     document
         .getElementById("forwardButton")
         .addEventListener(
             "click",
             goForward
         );
+
 
     document
         .getElementById("reloadButton")
@@ -630,15 +887,28 @@
         );
 
 
+    document
+        .getElementById("liveButton")
+        .addEventListener(
+            "click",
+            openLive
+        );
+
+
     /*
-     * Press Enter to navigate.
+     * ==========================================
+     * SEARCH ENTER KEY
+     * ==========================================
      */
-    urlInput.addEventListener(
+
+    searchInput.addEventListener(
         "keydown",
         function(event) {
 
             if (event.key === "Enter") {
-                openURL();
+
+                webSearch();
+
             }
 
         }
@@ -646,17 +916,47 @@
 
 
     /*
-     * Show errors that occur while loading
-     * the iframe itself.
+     * ==========================================
+     * URL ENTER KEY
+     * ==========================================
      */
+
+    urlInput.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key === "Enter") {
+
+                openURL();
+
+            }
+
+        }
+    );
+
+
+    /*
+     * ==========================================
+     * IFRAME LOAD
+     * ==========================================
+     */
+
     viewer.addEventListener(
         "load",
         function() {
 
             if (isYouTube) {
-                setStatus("YouTube player loaded.");
+
+                setStatus(
+                    "YouTube player loaded."
+                );
+
             } else {
-                setStatus("Page loaded.");
+
+                setStatus(
+                    "Page loaded."
+                );
+
             }
 
         }
