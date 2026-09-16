@@ -4,23 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Web Viewer</title>
+    <title>Bing Web Viewer</title>
 
     <style>
         * {
             box-sizing: border-box;
         }
 
-        html, body {
-            margin: 0;
+        html,
+        body {
             width: 100%;
             height: 100%;
+            margin: 0;
         }
 
         body {
             background: #0074d9;
             color: white;
             font-family: Arial, sans-serif;
+
             display: flex;
             flex-direction: column;
         }
@@ -28,39 +30,46 @@
         h1 {
             color: #ff4136;
             text-align: center;
-            margin: 15px 0 10px;
+            margin: 12px 0 8px;
+            font-size: 26px;
         }
 
         .toolbar {
             display: flex;
-            gap: 6px;
-            padding: 6px 10px;
-            flex-wrap: wrap;
+            align-items: center;
             justify-content: center;
+            gap: 6px;
+
+            padding: 5px 10px;
+            flex-wrap: wrap;
         }
 
         input {
-            padding: 10px;
             border: none;
             border-radius: 4px;
+            padding: 10px 12px;
+
             font-size: 15px;
             outline: none;
         }
 
-        #urlInput {
-            width: min(650px, 70vw);
+        #searchInput {
+            width: min(550px, 65vw);
         }
 
-        #searchInput {
-            width: min(500px, 65vw);
+        #urlInput {
+            width: min(700px, 70vw);
         }
 
         button {
             border: none;
             border-radius: 4px;
+
             padding: 10px 14px;
+
             background: #2ecc40;
             color: white;
+
             font-size: 14px;
             cursor: pointer;
         }
@@ -78,24 +87,33 @@
         }
 
         #status {
-            text-align: center;
-            min-height: 22px;
-            padding: 5px;
-            font-size: 14px;
+            height: 25px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            font-size: 13px;
         }
 
         #viewerContainer {
             flex: 1;
-            width: 100%;
-            padding: 0 10px 10px;
+
             min-height: 0;
+
+            width: 100%;
+
+            padding: 0 8px 8px;
         }
 
         #viewer {
             display: block;
+
             width: 100%;
             height: 100%;
+
             border: none;
+
             background: white;
         }
     </style>
@@ -103,26 +121,34 @@
 
 <body>
 
-    <h1>Web Viewer</h1>
+    <h1>Bing Web Viewer</h1>
 
-    <!-- SEARCH BAR -->
+
+    <!-- ==============================
+         SEARCH BAR
+         ============================== -->
+
     <div class="toolbar">
 
         <input
             id="searchInput"
             type="text"
-            placeholder="Search the web..."
+            placeholder="Search Bing..."
             autocomplete="off"
+            spellcheck="false"
         >
 
-        <button onclick="searchWeb()">
-            Search
+        <button onclick="searchBing()">
+            🔎 Search
         </button>
 
     </div>
 
 
-    <!-- URL BAR -->
+    <!-- ==============================
+         URL BAR
+         ============================== -->
+
     <div class="toolbar">
 
         <input
@@ -130,6 +156,7 @@
             type="text"
             placeholder="Enter a URL..."
             autocomplete="off"
+            spellcheck="false"
         >
 
         <button onclick="goToURL()">
@@ -145,32 +172,43 @@
         </button>
 
         <button onclick="reloadPage()">
-            Reload
+            ↻
         </button>
 
         <button
             class="red"
-            onclick="home()">
+            onclick="goHome()">
             Home
         </button>
 
     </div>
 
 
-    <!-- STATUS -->
+    <!-- ==============================
+         STATUS
+         ============================== -->
+
     <div id="status">
-        Ready
+        Loading Bing...
     </div>
 
 
-    <!-- VIEWER -->
+    <!-- ==============================
+         IFRAME
+         ============================== -->
+
     <div id="viewerContainer">
 
         <iframe
             id="viewer"
             name="viewerFrame"
-            title="Web Viewer"
-            allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+            title="Web Browser"
+            allow="
+                autoplay;
+                fullscreen;
+                encrypted-media;
+                picture-in-picture
+            "
             allowfullscreen>
         </iframe>
 
@@ -179,66 +217,117 @@
 
 <script>
 
+    /*
+     * ==================================================
+     * ELEMENTS
+     * ==================================================
+     */
+
     const viewer =
         document.getElementById("viewer");
 
-    const urlInput =
-        document.getElementById("urlInput");
-
     const searchInput =
         document.getElementById("searchInput");
+
+    const urlInput =
+        document.getElementById("urlInput");
 
     const status =
         document.getElementById("status");
 
 
     /*
-     * ==========================================
-     * STATUS
-     * ==========================================
+     * ==================================================
+     * DEFAULT PAGE
+     * ==================================================
      */
 
-    function setStatus(text) {
-        status.textContent = text;
+    const BING_HOME =
+        "https://www.bing.com/";
+
+
+    /*
+     * ==================================================
+     * STATUS
+     * ==================================================
+     */
+
+    function setStatus(message) {
+
+        status.textContent =
+            message;
+
     }
 
 
     /*
-     * ==========================================
+     * ==================================================
      * NORMALIZE URL
-     * ==========================================
+     * ==================================================
      */
 
     function normalizeURL(value) {
 
-        value = value.trim();
+        value =
+            value.trim();
+
 
         if (!value) {
             return null;
         }
 
+
         /*
-         * If the user typed a domain without
-         * http:// or https://, add https://
+         * If it looks like a search instead
+         * of a URL, search Bing.
          */
 
-        if (!/^https?:\/\//i.test(value)) {
-            value = "https://" + value;
+        if (
+            !value.includes("://") &&
+            !value.includes(".") &&
+            !value.includes("/")
+        ) {
+
+            return (
+                "https://www.bing.com/search?q=" +
+                encodeURIComponent(value)
+            );
+
         }
 
+
+        /*
+         * Add HTTPS when necessary.
+         */
+
+        if (
+            !/^https?:\/\//i.test(value)
+        ) {
+
+            value =
+                "https://" + value;
+
+        }
+
+
         try {
+
             return new URL(value).href;
+
         }
         catch {
+
             return null;
+
         }
+
     }
 
 
     /*
-     * ==========================================
-     * YOUTUBE DETECTION
-     * ==========================================
+     * ==================================================
+     * YOUTUBE ID
+     * ==================================================
      */
 
     function getYouTubeID(value) {
@@ -253,7 +342,7 @@
 
 
             /*
-             * youtube.com/watch?v=...
+             * youtube.com
              */
 
             if (
@@ -262,39 +351,53 @@
                 host === "m.youtube.com"
             ) {
 
-                if (url.pathname === "/watch") {
+                /*
+                 * /watch?v=ID
+                 */
 
-                    return url.searchParams.get("v");
+                if (
+                    url.pathname === "/watch"
+                ) {
+
+                    return (
+                        url.searchParams.get("v")
+                    );
 
                 }
 
 
                 /*
-                 * youtube.com/shorts/ID
+                 * /shorts/ID
                  */
 
                 if (
-                    url.pathname.startsWith("/shorts/")
+                    url.pathname.startsWith(
+                        "/shorts/"
+                    )
                 ) {
 
                     return url.pathname
                         .split("/")[2]
-                        ?.split("?")[0];
+                        ?.split("?")[0]
+                        ?.split("&")[0];
 
                 }
 
 
                 /*
-                 * youtube.com/embed/ID
+                 * /embed/ID
                  */
 
                 if (
-                    url.pathname.startsWith("/embed/")
+                    url.pathname.startsWith(
+                        "/embed/"
+                    )
                 ) {
 
                     return url.pathname
                         .split("/")[2]
-                        ?.split("?")[0];
+                        ?.split("?")[0]
+                        ?.split("&")[0];
 
                 }
 
@@ -305,45 +408,51 @@
              * youtu.be/ID
              */
 
-            if (host === "youtu.be") {
+            if (
+                host === "youtu.be"
+            ) {
 
                 return url.pathname
                     .split("/")[1]
-                    ?.split("?")[0];
+                    ?.split("?")[0]
+                    ?.split("&")[0];
 
             }
 
         }
         catch {
+
             return null;
+
         }
 
+
         return null;
+
     }
 
 
     /*
-     * ==========================================
-     * LOAD PAGE
-     * ==========================================
+     * ==================================================
+     * LOAD URL
+     * ==================================================
      */
 
-    function loadPage(url) {
+    function loadURL(url) {
+
+        /*
+         * Handle YouTube URLs.
+         */
 
         const youtubeID =
             getYouTubeID(url);
 
 
-        /*
-         * Turn normal YouTube URLs into
-         * YouTube's embedded player.
-         */
-
         if (youtubeID) {
 
             url =
-                "https://www.youtube.com/embed/"
-                + encodeURIComponent(youtubeID);
+                "https://www.youtube.com/embed/" +
+                encodeURIComponent(youtubeID);
 
             setStatus(
                 "Loading YouTube..."
@@ -365,27 +474,42 @@
 
         viewer.src =
             url;
+
     }
 
 
     /*
-     * ==========================================
+     * ==================================================
      * GO TO URL
-     * ==========================================
+     * ==================================================
      */
 
     function goToURL() {
 
+        const value =
+            urlInput.value.trim();
+
+
+        if (!value) {
+
+            return;
+
+        }
+
+
+        /*
+         * If they typed a normal URL,
+         * load it.
+         */
+
         const url =
-            normalizeURL(
-                urlInput.value
-            );
+            normalizeURL(value);
 
 
         if (!url) {
 
             setStatus(
-                "That isn't a valid URL."
+                "Invalid URL."
             );
 
             return;
@@ -393,17 +517,18 @@
         }
 
 
-        loadPage(url);
+        loadURL(url);
+
     }
 
 
     /*
-     * ==========================================
-     * WEB SEARCH
-     * ==========================================
+     * ==================================================
+     * BING SEARCH
+     * ==================================================
      */
 
-    function searchWeb() {
+    function searchBing() {
 
         const query =
             searchInput.value.trim();
@@ -412,7 +537,7 @@
         if (!query) {
 
             setStatus(
-                "Enter a search."
+                "Enter something to search for."
             );
 
             return;
@@ -420,41 +545,39 @@
         }
 
 
-        /*
-         * Search is loaded directly into
-         * the iframe instead of a new tab.
-         */
-
-        const searchURL =
-            "https://www.bing.com/search?q="
-            + encodeURIComponent(query);
+        const url =
+            "https://www.bing.com/search?q=" +
+            encodeURIComponent(query);
 
 
         urlInput.value =
-            searchURL;
+            url;
 
 
         setStatus(
-            "Loading search..."
+            "Searching Bing..."
         );
 
 
         viewer.src =
-            searchURL;
+            url;
+
     }
 
 
     /*
-     * ==========================================
+     * ==================================================
      * BACK
-     * ==========================================
+     * ==================================================
      */
 
     function goBack() {
 
         try {
 
-            viewer.contentWindow.history.back();
+            viewer.contentWindow
+                .history
+                .back();
 
         }
         catch {
@@ -464,20 +587,23 @@
             );
 
         }
+
     }
 
 
     /*
-     * ==========================================
+     * ==================================================
      * FORWARD
-     * ==========================================
+     * ==================================================
      */
 
     function goForward() {
 
         try {
 
-            viewer.contentWindow.history.forward();
+            viewer.contentWindow
+                .history
+                .forward();
 
         }
         catch {
@@ -487,20 +613,23 @@
             );
 
         }
+
     }
 
 
     /*
-     * ==========================================
+     * ==================================================
      * RELOAD
-     * ==========================================
+     * ==================================================
      */
 
     function reloadPage() {
 
         try {
 
-            viewer.contentWindow.location.reload();
+            viewer.contentWindow
+                .location
+                .reload();
 
         }
         catch {
@@ -509,52 +638,64 @@
                 viewer.src;
 
         }
+
     }
 
 
     /*
-     * ==========================================
+     * ==================================================
      * HOME
-     * ==========================================
+     * ==================================================
      */
 
-    function home() {
+    function goHome() {
 
-        viewer.src =
-            "about:blank";
-
-        urlInput.value =
+        searchInput.value =
             "";
 
+        urlInput.value =
+            BING_HOME;
+
         setStatus(
-            "Ready"
+            "Loading Bing..."
         );
+
+        viewer.src =
+            BING_HOME;
+
     }
 
 
     /*
-     * ==========================================
-     * FORCE LINKS INTO IFRAME
-     * ==========================================
+     * ==================================================
+     * KEEP LINKS IN THE IFRAME
+     * ==================================================
      *
-     * This works when the loaded page is
-     * accessible under the same-origin rules.
+     * This works for pages that the browser allows
+     * the parent document to inspect.
      *
-     * It changes:
+     * Links such as:
      *
-     * _blank
-     * _top
-     * _parent
+     * target="_blank"
+     * target="_top"
+     * target="_parent"
      *
-     * into:
+     * are changed to:
      *
-     * viewerFrame
+     * target="viewerFrame"
      *
-     * so the link targets this iframe.
+     * so they stay inside this iframe.
      *
+     * Cross-origin pages cannot be inspected because
+     * of the browser's same-origin security rules.
+     *
+     * Normal links without a target already stay
+     * inside the iframe.
+     *
+     * ==================================================
      */
 
-    function forceLinksIntoViewer() {
+    function keepLinksInIframe() {
 
         try {
 
@@ -575,7 +716,9 @@
                 function(link) {
 
                     const target =
-                        link.getAttribute("target");
+                        link.getAttribute(
+                            "target"
+                        );
 
 
                     if (
@@ -594,14 +737,68 @@
                 }
             );
 
+
+            /*
+             * Also watch for links that websites
+             * dynamically add after the page loads.
+             */
+
+            const observer =
+                new MutationObserver(
+                    function() {
+
+                        const newLinks =
+                            doc.querySelectorAll(
+                                "a"
+                            );
+
+
+                        newLinks.forEach(
+                            function(link) {
+
+                                const target =
+                                    link.getAttribute(
+                                        "target"
+                                    );
+
+
+                                if (
+                                    target === "_blank" ||
+                                    target === "_top" ||
+                                    target === "_parent"
+                                ) {
+
+                                    link.setAttribute(
+                                        "target",
+                                        "viewerFrame"
+                                    );
+
+                                }
+
+                            }
+                        );
+
+                    }
+                );
+
+
+            observer.observe(
+                doc.documentElement,
+                {
+                    childList: true,
+                    subtree: true
+                }
+            );
+
         }
         catch {
 
             /*
-             * Cross-origin pages cannot be
-             * inspected by the parent page.
+             * Cross-origin page.
              *
-             * This is expected browser behavior.
+             * We cannot access its DOM.
+             * This is intentionally left alone rather
+             * than trying to bypass browser security.
              */
 
         }
@@ -610,9 +807,9 @@
 
 
     /*
-     * ==========================================
-     * IFRAME LOADED
-     * ==========================================
+     * ==================================================
+     * IFRAME LOAD
+     * ==================================================
      */
 
     viewer.addEventListener(
@@ -624,30 +821,26 @@
             );
 
 
+            keepLinksInIframe();
+
+
             /*
-             * Try to make links stay in
-             * the viewer.
+             * Try to update the URL box for pages
+             * where the browser permits access.
              */
 
-            forceLinksIntoViewer();
+            try {
 
-        }
-    );
+                urlInput.value =
+                    viewer.contentWindow
+                        .location.href;
 
+            }
+            catch {
 
-    /*
-     * ==========================================
-     * ENTER KEY — SEARCH
-     * ==========================================
-     */
-
-    searchInput.addEventListener(
-        "keydown",
-        function(event) {
-
-            if (event.key === "Enter") {
-
-                searchWeb();
+                /*
+                 * Cross-origin pages prevent this.
+                 */
 
             }
 
@@ -656,16 +849,40 @@
 
 
     /*
-     * ==========================================
-     * ENTER KEY — URL
-     * ==========================================
+     * ==================================================
+     * SEARCH ENTER KEY
+     * ==================================================
+     */
+
+    searchInput.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                searchBing();
+
+            }
+
+        }
+    );
+
+
+    /*
+     * ==================================================
+     * URL ENTER KEY
+     * ==================================================
      */
 
     urlInput.addEventListener(
         "keydown",
         function(event) {
 
-            if (event.key === "Enter") {
+            if (
+                event.key === "Enter"
+            ) {
 
                 goToURL();
 
@@ -676,13 +893,16 @@
 
 
     /*
-     * ==========================================
-     * START BLANK
-     * ==========================================
+     * ==================================================
+     * START ON BING
+     * ==================================================
      */
 
     viewer.src =
-        "about:blank";
+        BING_HOME;
+
+    urlInput.value =
+        BING_HOME;
 
 </script>
 
